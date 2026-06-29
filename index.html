@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>경비행기장 탑승 대기열 관리 시스템</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Malgun Gothic', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 26px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 15px;
+        }
+
+        /* 상단 설정 및 등록 영역 */
+        .setup-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 1px solid #e9ecef;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        input, select {
+            padding: 10px;
+            border: 2px solid #ced4da;
+            border-radius: 6px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: #3498db;
+        }
+
+        .btn-add {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: auto;
+            height: 42px;
+        }
+
+        .btn-add:hover { background-color: #2980b9; }
+
+        /* 대기시간 대시보드 */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .status-card {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 5px solid #3498db;
+        }
+
+        .status-card.alert {
+            background: #fdf2f2;
+            border-left-color: #e74c3c;
+        }
+
+        .card-title { font-size: 14px; color: #6c757d; margin-bottom: 5px; }
+        .card-value { font-size: 28px; font-weight: bold; color: #2c3e50; }
+        .status-card.alert .card-value { color: #e74c3c; }
+
+        /* 대기 리스트 테이블 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
+        }
+
+        .btn-board {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-board:hover { background-color: #27ae60; }
+
+        .btn-delete {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .btn-delete:hover { background-color: #c0392b; }
+
+        .empty-text {
+            color: #95a5a6;
+            padding: 30px !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛩️ 경비행기 실시간 탑승 대기열 관리</h1>
+
+    <div class="setup-section">
+        <div class="input-group">
+            <label for="planes">현재 운영 중인 비행기 수 (대)</label>
+            <input type="number" id="planes" min="1" value="2" oninput="updateDashboard()">
+        </div>
+        
+        <div style="visibility: hidden;"></div> <div class="input-group">
+            <label for="passengerName">승객명 / 팀명</label>
+            <input type="text" id="passengerName" placeholder="예: 홍길동 (2명)">
+        </div>
+
+        <div class="input-group" style="flex-direction: row; gap: 10px; align-items: flex-end;">
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                <label for="courseTime">선택 코스</label>
+                <select id="courseTime">
+                    <option value="10">A 코스 (10분)</option>
+                    <option value="20">B 코스 (20분)</option>
+                    <option value="30">C 코스 (30분)</option>
+                    <option value="60">D 코스 (1시간)</option>
+                </select>
+            </div>
+            <button class="btn-add" onclick="addPassenger()">대기 등록</button>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="status-card">
+            <div class="card-title">현재 대기 인원</div>
+            <div class="card-value" id="totalWaitingPeople">0 팀 (0명)</div>
+        </div>
+        <div class="status-card alert">
+            <div class="card-title">지금 접수 시 예상 대기시간</div>
+            <div class="card-value" id="estimatedWaitTime">즉시 탑승</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>대기 순번</th>
+                <th>승객/팀명</th>
+                <th>신청 코스</th>
+                <th>접수 시간</th>
+                <th>상태 관리</th>
+            </tr>
+        </thead>
+        <tbody id="passenger-list">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    let waitingQueue = [];
+    let idCounter = 0;
+
+    // 승객 등록 함수
+    function addPassenger() {
+        const nameInput = document.getElementById('passengerName');
+        const courseSelect = document.getElementById('courseTime');
+
+        if (!nameInput.value.trim()) {
+            alert('승객명 또는 팀명을 입력해주세요.');
+            return;
+        }
+
+        idCounter++;
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM 포맷
+
+        const passenger = {
+            id: idCounter,
+            name: nameInput.value,
+            courseMinutes: parseInt(courseSelect.value),
+            courseText: courseSelect.options[courseSelect.selectedIndex].text,
+            time: timeStr
+        };
+
+        waitingQueue.push(passenger);
+        nameInput.value = ''; // 입력창 초기화
+        
+        renderTable();
+        updateDashboard();
+    }
+
+    // 탑승 완료 처리 (대기열에서 제외)
+    function boardPassenger(id) {
+        waitingQueue = waitingQueue.filter(p => p.id !== id);
+        renderTable();
+        updateDashboard();
+    }
+
+    // 대기 취소/삭제 처리
+    function deletePassenger(id) {
+        if(confirm('대기 목록에서 삭제하시겠습니까?')) {
+            waitingQueue = waitingQueue.filter(p => p.id !== id);
+            renderTable();
+            updateDashboard();
+        }
+    }
+
+    // 대시보드 실시간 수치 업데이트 및 시간 계산
+    function updateDashboard() {
+        const planes = parseInt(document.getElementById('planes').value) || 0;
+        const totalWaitingPeople = document.getElementById('totalWaitingPeople');
+        const estimatedWaitTime = document.getElementById('estimatedWaitTime');
+
+        // 1. 대기 팀수 업데이트
+        totalWaitingPeople.innerText = `${waitingQueue.length} 팀`;
+
+        // 예외 처리
+        if (planes <= 0) {
+            estimatedWaitTime.innerText = "운항 중지";
+            return;
+        }
+        if (waitingQueue.length === 0) {
+            estimatedWaitTime.innerText = "즉시 탑승";
+            return;
+        }
+
+        // 2. 대기열에 쌓인 모든 코스의 총 합산 분(Minutes) 구하기
+        let totalMinutes = waitingQueue.reduce((sum, p) => sum + p.courseMinutes, 0);
+
+        // 3. 대기시간 계산 공식: 총 비행 분량 / 운영 비행기 수
+        let finalWaitMinutes = Math.ceil(totalMinutes / planes);
+
+        // 4. 가독성 좋게 포맷팅 (60분 이상 시 시간/분 분리)
+        if (finalWaitMinutes >= 60) {
+            const hours = Math.floor(finalWaitMinutes / 60);
+            const mins = finalWaitMinutes % 60;
+            estimatedWaitTime.innerText = mins === 0 ? `약 ${hours}시간` : `약 ${hours}시간 ${mins}분`;
+        } else {
+            estimatedWaitTime.innerText = `약 ${finalWaitMinutes}분`;
+        }
+    }
+
+    // 대기 명단 테이블 그리기
+    function renderTable() {
+        const tbody = document.getElementById('passenger-list');
+        tbody.innerHTML = '';
+
+        if (waitingQueue.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-text">현재 대기 중인 탑승객이 없습니다.</td></tr>`;
+            return;
+        }
+
+        waitingQueue.forEach((p, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><b>${index + 1}번</b></td>
+                <td>${p.name}</td>
+                <td><span style="color:#3498db; font-weight:bold;">${p.courseText}</span></td>
+                <td>${p.time}</td>
+                <td>
+                    <button class="btn-board" onclick="boardPassenger(${p.id})">🛫 탑승완료(제외)</button>
+                    <button class="btn-delete" onclick="deletePassenger(${p.id})">삭제</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // 최초 로드 시 실행
+    renderTable();
+    updateDashboard();
+</script>
+
+</body>
+</html>
