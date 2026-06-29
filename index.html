@@ -12,7 +12,38 @@
         header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #3a3f50; padding-bottom: 15px; }
         h1 { color: #4ba3e3; font-size: 28px; }
 
-        .main-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 25px; }
+       /* 기존 코드를 지우고 아래 내용으로 바꿔주세요 */
+        .main-layout { 
+            display: grid; 
+            grid-template-columns: 1fr 1.5fr; 
+            gap: 25px; 
+        }
+
+        /* 📱 모바일 화면(화면 폭이 768px 이하일 때)을 위한 반응형 코드 추가 */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px; /* 모바일에서는 여백을 줄임 */
+            }
+            
+            .main-layout { 
+                grid-template-columns: 1fr; /* 가로 2단 분할을 세로 1단으로 변경 */
+                gap: 15px;
+            }
+
+            .setup-section {
+                grid-template-columns: 1fr; /* 입력창들도 세로로 나란히 변경 */
+            }
+
+            /* 테이블이 너무 길어 잘리는 경우를 방지하기 위해 가로 스크롤 감싸기 */
+            .panel {
+                overflow-x: auto; 
+                padding: 15px;
+            }
+            
+            table {
+                min-width: 500px; /* 테이블 최소 가로폭을 지정해 글자가 뭉개지지 않게 보호 */
+            }
+        }
         
         /* 섹션 공통 스타일 */
         .panel { background: #242836; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
