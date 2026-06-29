@@ -109,7 +109,7 @@
                         <th>승객/팀명</th>
                         <th>신청 코스</th>
                         <th>예상 대기시간</th>
-                        <th>탑승 지시</th>
+                        <th>탑승 관리</th>
                     </tr>
                 </thead>
                 <tbody id="queueTableBody">
@@ -120,11 +120,11 @@
 </div>
 
 <script>
-    let planes = []; // 비행기 상태 배열 ({id, remainingSeconds, isBusy})
-    let queue = [];  // 대기 승객 배열 ({id, name, courseMinutes})
+    let planes = []; // 비행기 상태 배열
+    let queue = [];  // 대기 승객 배열
     let idCounter = 0;
 
-    // 1초마다 전체 비행기 타이머 깎고 대기시간 다시 계산하기
+    // 1초마다 타이머 계산
     setInterval(() => {
         planes.forEach(plane => {
             if (plane.isBusy && plane.remainingSeconds > 0) {
@@ -138,11 +138,10 @@
         calculateSimulation();
     }, 1000);
 
-    // 비행기 초기화 생성
+    // 비행기 초기화
     function initPlanes() {
         const count = parseInt(document.getElementById('planeCount').value) || 1;
         
-        // 기존 비행기 수 유지하면서 개수 맞추기
         if (planes.length < count) {
             for (let i = planes.length + 1; i <= count; i++) {
                 planes.push({ id: i, remainingSeconds: 0, isBusy: false });
@@ -169,7 +168,7 @@
 
             card.innerHTML = `
                 <div class="plane-id">🛩️ 비행기 ${p.id}호</div>
-                <div class="plane-status">${p.isBusy ? '❌ 비행 중' : '🟢 대기 중'}</div>
+                <div class="plane-status">${p.isBusy ? '❌ 탑승/비행 중' : '🟢 대기 중'}</div>
                 <div class="plane-timer">${timeStr}</div>
             `;
             grid.appendChild(card);
@@ -197,13 +196,12 @@
         calculateSimulation();
     }
 
-    // 비행기 이륙 (대기열에서 빠지면서 특정 비행기 타이머 시작)
-    function takeoff(passengerId) {
-        // 가장 먼저 비어 있는(또는 가장 먼저 내릴) 비행기 찾기
+    // 탑승 완료 처리 (대기열 제외 및 타이머 주입)
+    function completeBoarding(passengerId) {
         let targetPlane = planes.find(p => !p.isBusy);
         
         if (!targetPlane) {
-            alert("현재 비행 중인 기체들이 있어 이륙 처리가 불가능합니다. 비행기가 착륙(대기 중으로 전환)하면 이륙 버튼을 눌러주세요.");
+            alert("현재 비어 있는 비행기가 없습니다. 비행기가 착륙하여 대기 중 상태로 전환되면 탑승 완료 처리를 해주세요.");
             return;
         }
 
@@ -211,11 +209,9 @@
         if (passengerIndex !== -1) {
             const passenger = queue[passengerIndex];
             
-            // 비행기에 시간 주입 (초 단위 변환)
             targetPlane.isBusy = true;
             targetPlane.remainingSeconds = passenger.courseMinutes * 60;
             
-            // 대기열에서 삭제
             queue.splice(passengerIndex, 1);
             
             renderPlanes();
@@ -229,7 +225,7 @@
         calculateSimulation();
     }
 
-    // ⭐ 핵심: 타임라인 시뮬레이션 대기시간 계산 함수
+    // 시뮬레이션 기반 대기시간 계산
     function calculateSimulation() {
         const nextWaitTimeDisplay = document.getElementById('nextWaitTimeDisplay');
         const tbody = document.getElementById('queueTableBody');
@@ -240,14 +236,10 @@
             return;
         }
 
-        // 시뮬레이션용 임시 비행기 타임라인 복사 (초 단위)
         let virtualPlanes = planes.map(p => p.remainingSeconds);
-
-        // 현재 대기열에 있는 사람들을 가상으로 타임라인에 하나씩 배치해보기
-        let passengerWaitTimes = []; // 각 대기자별 가상 대기시간(분)
+        let passengerWaitTimes = [];
 
         queue.forEach(passenger => {
-            // 가장 먼저 비는 비행기의 인덱스 찾기 (남은 시간이 제일 적은 녀석)
             let minRemainingIndex = 0;
             for (let i = 1; i < virtualPlanes.length; i++) {
                 if (virtualPlanes[i] < virtualPlanes[minRemainingIndex]) {
@@ -255,15 +247,12 @@
                 }
             }
 
-            // 이 승객이 기다려야 하는 시간은 해당 비행기가 빌 때까지의 시간
             let waitSeconds = virtualPlanes[minRemainingIndex];
             passengerWaitTimes.push(Math.ceil(waitSeconds / 60));
-
-            // 가상 비행기에 이 승객의 비행 코스 시간만큼 누적 추가
             virtualPlanes[minRemainingIndex] += (passenger.courseMinutes * 60);
         });
 
-        // 1. 테이블 렌더링
+        // 테이블 출력
         if (queue.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" class="empty-text">현재 대기실에 대기 중인 승객이 없습니다.</td></tr>`;
         } else {
@@ -272,7 +261,6 @@
                 const waitTime = passengerWaitTimes[index];
                 const waitText = waitTime === 0 ? "즉시 탑승" : `약 ${waitTime}분`;
                 
-                // 첫 번째 대기자이고, 비어 있는 비행기가 있을 때만 [이륙 지시] 활성화 느낌 주기
                 const hasReadyPlane = planes.some(p => !p.isBusy);
                 const isFirst = (index === 0);
                 const buttonDisableAttr = (isFirst && hasReadyPlane) ? '' : 'style="background:#7f8c8d; cursor:not-allowed;"';
@@ -283,7 +271,7 @@
                     <td><span style="color:#4ba3e3; font-weight:bold;">${passenger.courseMinutes}분 코스</span></td>
                     <td style="color:#f1c40f; font-weight:bold;">${waitText}</td>
                     <td>
-                        <button class="btn-action btn-takeoff" ${buttonDisableAttr} onclick="takeoff(${passenger.id})">🛫 이륙 지시</button>
+                        <button class="btn-action btn-takeoff" ${buttonDisableAttr} onclick="completeBoarding(${passenger.id})">🛫 탑승 완료</button>
                         <button class="btn-action btn-cancel" onclick="cancelQueue(${passenger.id})">취소</button>
                     </td>
                 `;
@@ -291,7 +279,7 @@
             });
         }
 
-        // 2. 상단 전광판 업데이트 (지금 접수할 다음 사람의 예상 대기시간)
+        // 전광판 업데이트
         let nextMinIndex = 0;
         for (let i = 1; i < virtualPlanes.length; i++) {
             if (virtualPlanes[i] < virtualPlanes[nextMinIndex]) {
@@ -315,7 +303,6 @@
         }
     }
 
-    // 최초 실행
     initPlanes();
 </script>
 </body>
