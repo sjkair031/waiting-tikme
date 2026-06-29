@@ -3,336 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>경비행기장 탑승 대기열 관리 시스템</title>
+    <title>경비행기장 정밀 관제 및 대기열 시스템</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Malgun Gothic', sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; }
+        body { background: #1a1c23; padding: 30px; color: #e1e4ea; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #3a3f50; padding-bottom: 15px; }
+        h1 { color: #4ba3e3; font-size: 28px; }
 
-        body {
-            background: linear-gradient(135deg, #2c3e50, #3498db);
-            min-height: 100vh;
-            padding: 40px 20px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            color: #333;
-        }
+        .main-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 25px; }
+        
+        /* 섹션 공통 스타일 */
+        .panel { background: #242836; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
+        h2 { font-size: 18px; margin-bottom: 15px; color: #fff; border-left: 4px solid #4ba3e3; padding-left: 8px; }
 
-        .container {
-            background: white;
-            max-width: 800px;
-            width: 100%;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-        }
+        /* 입력창 영역 */
+        .input-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 13px; color: #9aa0b0; }
+        input, select { padding: 10px; background: #2f354a; border: 1px solid #3e445e; color: #fff; border-radius: 6px; font-size: 15px; outline: none; }
+        input:focus, select:focus { border-color: #4ba3e3; }
+        .btn-primary { background: #4ba3e3; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 5px; }
+        .btn-primary:hover { background: #358ccb; }
 
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 25px;
-            font-size: 26px;
-            border-bottom: 3px solid #3498db;
-            padding-bottom: 15px;
-        }
+        /* 비행기 상태 대시보드 */
+        .planes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px; }
+        .plane-card { background: #2f354a; padding: 15px; border-radius: 8px; border: 1px solid #3e445e; position: relative; }
+        .plane-card.busy { border-color: #e74c3c; background: #3a2a2d; }
+        .plane-id { font-weight: bold; font-size: 16px; color: #fff; }
+        .plane-status { font-size: 12px; margin-top: 4px; color: #2ecc71; }
+        .plane-card.busy .plane-status { color: #e74c3c; }
+        .plane-timer { font-size: 20px; font-weight: bold; margin-top: 8px; font-family: monospace; }
 
-        /* 상단 설정 및 등록 영역 */
-        .setup-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            border: 1px solid #e9ecef;
-        }
+        /* 대기열 및 결과 */
+        .summary-box { background: #1a1c23; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; border: 1px solid #3a3f50; }
+        .summary-title { font-size: 13px; color: #9aa0b0; }
+        .summary-value { font-size: 32px; font-weight: bold; color: #f1c40f; margin-top: 5px; }
 
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+        /* 테이블 */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid #3a3f50; }
+        th { background: #2f354a; color: #9aa0b0; font-weight: normal; }
+        tr:hover { background: #2a2f42; }
 
-        label {
-            font-weight: bold;
-            color: #495057;
-        }
-
-        input, select {
-            padding: 10px;
-            border: 2px solid #ced4da;
-            border-radius: 6px;
-            font-size: 15px;
-            outline: none;
-        }
-
-        input:focus, select:focus {
-            border-color: #3498db;
-        }
-
-        .btn-add {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: auto;
-            height: 42px;
-        }
-
-        .btn-add:hover { background-color: #2980b9; }
-
-        /* 대기시간 대시보드 */
-        .dashboard {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .status-card {
-            background: #e8f4fd;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            border-left: 5px solid #3498db;
-        }
-
-        .status-card.alert {
-            background: #fdf2f2;
-            border-left-color: #e74c3c;
-        }
-
-        .card-title { font-size: 14px; color: #6c757d; margin-bottom: 5px; }
-        .card-value { font-size: 28px; font-weight: bold; color: #2c3e50; }
-        .status-card.alert .card-value { color: #e74c3c; }
-
-        /* 대기 리스트 테이블 */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: center;
-            border-bottom: 1px solid #dee2e6;
-        }
-
-        th {
-            background-color: #2c3e50;
-            color: white;
-        }
-
-        .btn-board {
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .btn-board:hover { background-color: #27ae60; }
-
-        .btn-delete {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-left: 5px;
-        }
-
-        .btn-delete:hover { background-color: #c0392b; }
-
-        .empty-text {
-            color: #95a5a6;
-            padding: 30px !important;
-        }
+        .btn-action { padding: 6px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .btn-takeoff { background: #2ecc71; color: white; }
+        .btn-takeoff:hover { background: #27ae60; }
+        .btn-cancel { background: #e74c3c; color: white; margin-left: 5px; }
+        .btn-cancel:hover { background: #c0392b; }
+        
+        .empty-text { color: #696f80; padding: 30px !important; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🛩️ 경비행기 실시간 탑승 대기열 관리</h1>
+    <header>
+        <h1>🛩️ 경비행기장 정밀 시뮬레이션 관제 시스템</h1>
+    </header>
 
-    <div class="setup-section">
-        <div class="input-group">
-            <label for="planes">현재 운영 중인 비행기 수 (대)</label>
-            <input type="number" id="planes" min="1" value="2" oninput="updateDashboard()">
-        </div>
-        
-        <div style="visibility: hidden;"></div> <div class="input-group">
-            <label for="passengerName">승객명 / 팀명</label>
-            <input type="text" id="passengerName" placeholder="예: 홍길동 (2명)">
-        </div>
-
-        <div class="input-group" style="flex-direction: row; gap: 10px; align-items: flex-end;">
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-                <label for="courseTime">선택 코스</label>
-                <select id="courseTime">
-                    <option value="10">A 코스 (10분)</option>
-                    <option value="20">B 코스 (20분)</option>
-                    <option value="30">C 코스 (30분)</option>
-                    <option value="60">D 코스 (1시간)</option>
-                </select>
+    <div class="main-layout">
+        <div style="display: flex; flex-direction: column; gap: 25px;">
+            <div class="panel">
+                <h2>1. 비행기 운항 현황 설정</h2>
+                <div class="input-group">
+                    <label for="planeCount">가동 가능한 총 비행기 수 (대)</label>
+                    <input type="number" id="planeCount" min="1" max="10" value="2" onchange="initPlanes()">
+                </div>
+                
+                <div class="planes-grid" id="planesGrid">
+                    </div>
             </div>
-            <button class="btn-add" onclick="addPassenger()">대기 등록</button>
+
+            <div class="panel">
+                <h2>2. 신규 대기 승객 접수</h2>
+                <div class="input-group">
+                    <label for="passengerName">승객명 / 팀명</label>
+                    <input type="text" id="passengerName" placeholder="예: 홍길동 팀">
+                </div>
+                <div class="input-group">
+                    <label for="courseTime">비행 코스 선택</label>
+                    <select id="courseTime">
+                        <option value="10">A 코스 (10분)</option>
+                        <option value="20">B 코스 (20분)</option>
+                        <option value="30">C 코스 (30분)</option>
+                        <option value="60">D 코스 (1시간)</option>
+                    </select>
+                </div>
+                <button class="btn-primary" style="width: 100%;" onclick="addPassenger()">대기열 등록</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>3. 실시간 대기 및 탑승 통제 현황</h2>
+            
+            <div class="summary-box">
+                <div class="summary-title">지금 접수 시 예상 대기시간 (정밀 예측)</div>
+                <div class="summary-value" id="nextWaitTimeDisplay">즉시 탑승 가능</div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>대기번호</th>
+                        <th>승객/팀명</th>
+                        <th>신청 코스</th>
+                        <th>예상 대기시간</th>
+                        <th>탑승 지시</th>
+                    </tr>
+                </thead>
+                <tbody id="queueTableBody">
+                    </tbody>
+            </table>
         </div>
     </div>
-
-    <div class="dashboard">
-        <div class="status-card">
-            <div class="card-title">현재 대기 인원</div>
-            <div class="card-value" id="totalWaitingPeople">0 팀 (0명)</div>
-        </div>
-        <div class="status-card alert">
-            <div class="card-title">지금 접수 시 예상 대기시간</div>
-            <div class="card-value" id="estimatedWaitTime">즉시 탑승</div>
-        </div>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>대기 순번</th>
-                <th>승객/팀명</th>
-                <th>신청 코스</th>
-                <th>접수 시간</th>
-                <th>상태 관리</th>
-            </tr>
-        </thead>
-        <tbody id="passenger-list">
-            </tbody>
-    </table>
 </div>
 
 <script>
-    let waitingQueue = [];
+    let planes = []; // 비행기 상태 배열 ({id, remainingSeconds, isBusy})
+    let queue = [];  // 대기 승객 배열 ({id, name, courseMinutes})
     let idCounter = 0;
 
-    // 승객 등록 함수
+    // 1초마다 전체 비행기 타이머 깎고 대기시간 다시 계산하기
+    setInterval(() => {
+        planes.forEach(plane => {
+            if (plane.isBusy && plane.remainingSeconds > 0) {
+                plane.remainingSeconds--;
+                if (plane.remainingSeconds <= 0) {
+                    plane.isBusy = false;
+                }
+            }
+        });
+        renderPlanes();
+        calculateSimulation();
+    }, 1000);
+
+    // 비행기 초기화 생성
+    function initPlanes() {
+        const count = parseInt(document.getElementById('planeCount').value) || 1;
+        
+        // 기존 비행기 수 유지하면서 개수 맞추기
+        if (planes.length < count) {
+            for (let i = planes.length + 1; i <= count; i++) {
+                planes.push({ id: i, remainingSeconds: 0, isBusy: false });
+            }
+        } else if (planes.length > count) {
+            planes = planes.slice(0, count);
+        }
+        renderPlanes();
+        calculateSimulation();
+    }
+
+    // 비행기 현황판 그리기
+    function renderPlanes() {
+        const grid = document.getElementById('planesGrid');
+        grid.innerHTML = '';
+
+        planes.forEach(p => {
+            const card = document.createElement('div');
+            card.className = `plane-card ${p.isBusy ? 'busy' : ''}`;
+            
+            const min = Math.floor(p.remainingSeconds / 60);
+            const sec = p.remainingSeconds % 60;
+            const timeStr = p.isBusy ? `${min}분 ${sec}초 남음` : '대기 중 (Standby)';
+
+            card.innerHTML = `
+                <div class="plane-id">🛩️ 비행기 ${p.id}호</div>
+                <div class="plane-status">${p.isBusy ? '❌ 비행 중' : '🟢 대기 중'}</div>
+                <div class="plane-timer">${timeStr}</div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    // 대기 승객 추가
     function addPassenger() {
         const nameInput = document.getElementById('passengerName');
         const courseSelect = document.getElementById('courseTime');
 
         if (!nameInput.value.trim()) {
-            alert('승객명 또는 팀명을 입력해주세요.');
+            alert('승객명을 입력하세요.');
             return;
         }
 
         idCounter++;
-        const now = new Date();
-        const timeStr = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM 포맷
-
-        const passenger = {
+        queue.push({
             id: idCounter,
             name: nameInput.value,
-            courseMinutes: parseInt(courseSelect.value),
-            courseText: courseSelect.options[courseSelect.selectedIndex].text,
-            time: timeStr
-        };
+            courseMinutes: parseInt(courseSelect.value)
+        });
 
-        waitingQueue.push(passenger);
-        nameInput.value = ''; // 입력창 초기화
+        nameInput.value = '';
+        calculateSimulation();
+    }
+
+    // 비행기 이륙 (대기열에서 빠지면서 특정 비행기 타이머 시작)
+    function takeoff(passengerId) {
+        // 가장 먼저 비어 있는(또는 가장 먼저 내릴) 비행기 찾기
+        let targetPlane = planes.find(p => !p.isBusy);
         
-        renderTable();
-        updateDashboard();
-    }
-
-    // 탑승 완료 처리 (대기열에서 제외)
-    function boardPassenger(id) {
-        waitingQueue = waitingQueue.filter(p => p.id !== id);
-        renderTable();
-        updateDashboard();
-    }
-
-    // 대기 취소/삭제 처리
-    function deletePassenger(id) {
-        if(confirm('대기 목록에서 삭제하시겠습니까?')) {
-            waitingQueue = waitingQueue.filter(p => p.id !== id);
-            renderTable();
-            updateDashboard();
-        }
-    }
-
-    // 대시보드 실시간 수치 업데이트 및 시간 계산
-    function updateDashboard() {
-        const planes = parseInt(document.getElementById('planes').value) || 0;
-        const totalWaitingPeople = document.getElementById('totalWaitingPeople');
-        const estimatedWaitTime = document.getElementById('estimatedWaitTime');
-
-        // 1. 대기 팀수 업데이트
-        totalWaitingPeople.innerText = `${waitingQueue.length} 팀`;
-
-        // 예외 처리
-        if (planes <= 0) {
-            estimatedWaitTime.innerText = "운항 중지";
-            return;
-        }
-        if (waitingQueue.length === 0) {
-            estimatedWaitTime.innerText = "즉시 탑승";
+        if (!targetPlane) {
+            alert("현재 비행 중인 기체들이 있어 이륙 처리가 불가능합니다. 비행기가 착륙(대기 중으로 전환)하면 이륙 버튼을 눌러주세요.");
             return;
         }
 
-        // 2. 대기열에 쌓인 모든 코스의 총 합산 분(Minutes) 구하기
-        let totalMinutes = waitingQueue.reduce((sum, p) => sum + p.courseMinutes, 0);
-
-        // 3. 대기시간 계산 공식: 총 비행 분량 / 운영 비행기 수
-        let finalWaitMinutes = Math.ceil(totalMinutes / planes);
-
-        // 4. 가독성 좋게 포맷팅 (60분 이상 시 시간/분 분리)
-        if (finalWaitMinutes >= 60) {
-            const hours = Math.floor(finalWaitMinutes / 60);
-            const mins = finalWaitMinutes % 60;
-            estimatedWaitTime.innerText = mins === 0 ? `약 ${hours}시간` : `약 ${hours}시간 ${mins}분`;
-        } else {
-            estimatedWaitTime.innerText = `약 ${finalWaitMinutes}분`;
+        const passengerIndex = queue.findIndex(p => p.id === passengerId);
+        if (passengerIndex !== -1) {
+            const passenger = queue[passengerIndex];
+            
+            // 비행기에 시간 주입 (초 단위 변환)
+            targetPlane.isBusy = true;
+            targetPlane.remainingSeconds = passenger.courseMinutes * 60;
+            
+            // 대기열에서 삭제
+            queue.splice(passengerIndex, 1);
+            
+            renderPlanes();
+            calculateSimulation();
         }
     }
 
-    // 대기 명단 테이블 그리기
-    function renderTable() {
-        const tbody = document.getElementById('passenger-list');
+    // 대기 취소
+    function cancelQueue(id) {
+        queue = queue.filter(p => p.id !== id);
+        calculateSimulation();
+    }
+
+    // ⭐ 핵심: 타임라인 시뮬레이션 대기시간 계산 함수
+    function calculateSimulation() {
+        const nextWaitTimeDisplay = document.getElementById('nextWaitTimeDisplay');
+        const tbody = document.getElementById('queueTableBody');
         tbody.innerHTML = '';
 
-        if (waitingQueue.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="empty-text">현재 대기 중인 탑승객이 없습니다.</td></tr>`;
+        if (planes.length === 0) {
+            nextWaitTimeDisplay.innerText = "비행기 없음";
             return;
         }
 
-        waitingQueue.forEach((p, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><b>${index + 1}번</b></td>
-                <td>${p.name}</td>
-                <td><span style="color:#3498db; font-weight:bold;">${p.courseText}</span></td>
-                <td>${p.time}</td>
-                <td>
-                    <button class="btn-board" onclick="boardPassenger(${p.id})">🛫 탑승완료(제외)</button>
-                    <button class="btn-delete" onclick="deletePassenger(${p.id})">삭제</button>
-                </td>
-            `;
-            tbody.appendChild(row);
+        // 시뮬레이션용 임시 비행기 타임라인 복사 (초 단위)
+        let virtualPlanes = planes.map(p => p.remainingSeconds);
+
+        // 현재 대기열에 있는 사람들을 가상으로 타임라인에 하나씩 배치해보기
+        let passengerWaitTimes = []; // 각 대기자별 가상 대기시간(분)
+
+        queue.forEach(passenger => {
+            // 가장 먼저 비는 비행기의 인덱스 찾기 (남은 시간이 제일 적은 녀석)
+            let minRemainingIndex = 0;
+            for (let i = 1; i < virtualPlanes.length; i++) {
+                if (virtualPlanes[i] < virtualPlanes[minRemainingIndex]) {
+                    minRemainingIndex = i;
+                }
+            }
+
+            // 이 승객이 기다려야 하는 시간은 해당 비행기가 빌 때까지의 시간
+            let waitSeconds = virtualPlanes[minRemainingIndex];
+            passengerWaitTimes.push(Math.ceil(waitSeconds / 60));
+
+            // 가상 비행기에 이 승객의 비행 코스 시간만큼 누적 추가
+            virtualPlanes[minRemainingIndex] += (passenger.courseMinutes * 60);
         });
+
+        // 1. 테이블 렌더링
+        if (queue.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-text">현재 대기실에 대기 중인 승객이 없습니다.</td></tr>`;
+        } else {
+            queue.forEach((passenger, index) => {
+                const row = document.createElement('tr');
+                const waitTime = passengerWaitTimes[index];
+                const waitText = waitTime === 0 ? "즉시 탑승" : `약 ${waitTime}분`;
+                
+                // 첫 번째 대기자이고, 비어 있는 비행기가 있을 때만 [이륙 지시] 활성화 느낌 주기
+                const hasReadyPlane = planes.some(p => !p.isBusy);
+                const isFirst = (index === 0);
+                const buttonDisableAttr = (isFirst && hasReadyPlane) ? '' : 'style="background:#7f8c8d; cursor:not-allowed;"';
+
+                row.innerHTML = `
+                    <td><b>${index + 1}번</b></td>
+                    <td>${passenger.name}</td>
+                    <td><span style="color:#4ba3e3; font-weight:bold;">${passenger.courseMinutes}분 코스</span></td>
+                    <td style="color:#f1c40f; font-weight:bold;">${waitText}</td>
+                    <td>
+                        <button class="btn-action btn-takeoff" ${buttonDisableAttr} onclick="takeoff(${passenger.id})">🛫 이륙 지시</button>
+                        <button class="btn-action btn-cancel" onclick="cancelQueue(${passenger.id})">취소</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 2. 상단 전광판 업데이트 (지금 접수할 다음 사람의 예상 대기시간)
+        let nextMinIndex = 0;
+        for (let i = 1; i < virtualPlanes.length; i++) {
+            if (virtualPlanes[i] < virtualPlanes[nextMinIndex]) {
+                nextMinIndex = i;
+            }
+        }
+        let nextWaitMinutes = Math.ceil(virtualPlanes[nextMinIndex] / 60);
+        
+        if (nextWaitMinutes <= 0) {
+            nextWaitTimeDisplay.innerText = "즉시 탑승 가능";
+            nextWaitTimeDisplay.style.color = "#2ecc71";
+        } else {
+            nextWaitTimeDisplay.style.color = "#f1c40f";
+            if (nextWaitMinutes >= 60) {
+                const h = Math.floor(nextWaitMinutes / 60);
+                const m = nextWaitMinutes % 60;
+                nextWaitTimeDisplay.innerText = m === 0 ? `약 ${h}시간` : `약 ${h}시간 ${m}분`;
+            } else {
+                nextWaitTimeDisplay.innerText = `약 ${nextWaitMinutes}분`;
+            }
+        }
     }
 
-    // 최초 로드 시 실행
-    renderTable();
-    updateDashboard();
+    // 최초 실행
+    initPlanes();
 </script>
-
 </body>
 </html>
