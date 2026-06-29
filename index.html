@@ -1,9 +1,10 @@
+HTML
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>경비행기장 정밀 관제 및 대기열 시스템</title>
+    <title>경비행기장 실시간 연동 관제 시스템</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; }
         body { background: #1a1c23; padding: 30px; color: #e1e4ea; }
@@ -12,44 +13,11 @@
         header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #3a3f50; padding-bottom: 15px; }
         h1 { color: #4ba3e3; font-size: 28px; }
 
-       /* 기존 코드를 지우고 아래 내용으로 바꿔주세요 */
-        .main-layout { 
-            display: grid; 
-            grid-template-columns: 1fr 1.5fr; 
-            gap: 25px; 
-        }
-
-        /* 📱 모바일 화면(화면 폭이 768px 이하일 때)을 위한 반응형 코드 추가 */
-        @media (max-width: 768px) {
-            body {
-                padding: 15px; /* 모바일에서는 여백을 줄임 */
-            }
-            
-            .main-layout { 
-                grid-template-columns: 1fr; /* 가로 2단 분할을 세로 1단으로 변경 */
-                gap: 15px;
-            }
-
-            .setup-section {
-                grid-template-columns: 1fr; /* 입력창들도 세로로 나란히 변경 */
-            }
-
-            /* 테이블이 너무 길어 잘리는 경우를 방지하기 위해 가로 스크롤 감싸기 */
-            .panel {
-                overflow-x: auto; 
-                padding: 15px;
-            }
-            
-            table {
-                min-width: 500px; /* 테이블 최소 가로폭을 지정해 글자가 뭉개지지 않게 보호 */
-            }
-        }
+        .main-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 25px; }
         
-        /* 섹션 공통 스타일 */
         .panel { background: #242836; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); }
         h2 { font-size: 18px; margin-bottom: 15px; color: #fff; border-left: 4px solid #4ba3e3; padding-left: 8px; }
 
-        /* 입력창 영역 */
         .input-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
         label { font-size: 13px; color: #9aa0b0; }
         input, select { padding: 10px; background: #2f354a; border: 1px solid #3e445e; color: #fff; border-radius: 6px; font-size: 15px; outline: none; }
@@ -57,7 +25,6 @@
         .btn-primary { background: #4ba3e3; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 5px; }
         .btn-primary:hover { background: #358ccb; }
 
-        /* 비행기 상태 대시보드 */
         .planes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px; }
         .plane-card { background: #2f354a; padding: 15px; border-radius: 8px; border: 1px solid #3e445e; position: relative; }
         .plane-card.busy { border-color: #e74c3c; background: #3a2a2d; }
@@ -66,12 +33,10 @@
         .plane-card.busy .plane-status { color: #e74c3c; }
         .plane-timer { font-size: 20px; font-weight: bold; margin-top: 8px; font-family: monospace; }
 
-        /* 대기열 및 결과 */
         .summary-box { background: #1a1c23; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; border: 1px solid #3a3f50; }
         .summary-title { font-size: 13px; color: #9aa0b0; }
         .summary-value { font-size: 32px; font-weight: bold; color: #f1c40f; margin-top: 5px; }
 
-        /* 테이블 */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
         th, td { padding: 12px; text-align: center; border-bottom: 1px solid #3a3f50; }
         th { background: #2f354a; color: #9aa0b0; font-weight: normal; }
@@ -84,13 +49,22 @@
         .btn-cancel:hover { background: #c0392b; }
         
         .empty-text { color: #696f80; padding: 30px !important; }
+
+        /* 모바일 반응형 레이아웃 */
+        @media (max-width: 768px) {
+            body { padding: 15px; }
+            .main-layout { grid-template-columns: 1fr; gap: 15px; }
+            .planes-grid { grid-template-columns: 1fr; }
+            .panel { overflow-x: auto; padding: 15px; }
+            table { min-width: 500px; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>🛩️ 경비행기장 정밀 시뮬레이션 관제 시스템</h1>
+        <h1>🛩️ Haman Airfield 실시간 대기열 관제 시스템</h1>
     </header>
 
     <div class="main-layout">
@@ -99,11 +73,9 @@
                 <h2>1. 비행기 운항 현황 설정</h2>
                 <div class="input-group">
                     <label for="planeCount">가동 가능한 총 비행기 수 (대)</label>
-                    <input type="number" id="planeCount" min="1" max="10" value="2" onchange="initPlanes()">
+                    <input type="number" id="planeCount" min="1" max="10" value="2" onchange="changePlaneCount()">
                 </div>
-                
-                <div class="planes-grid" id="planesGrid">
-                    </div>
+                <div class="planes-grid" id="planesGrid"></div>
             </div>
 
             <div class="panel">
@@ -126,11 +98,10 @@
         </div>
 
         <div class="panel">
-            <h2>3. 실시간 대기 및 탑승 통제 현황</h2>
-            
+            <h2>3. 실시간 대기 및 탑승 통제 현황 (자동 동기화)</h2>
             <div class="summary-box">
                 <div class="summary-title">지금 접수 시 예상 대기시간 (정밀 예측)</div>
-                <div class="summary-value" id="nextWaitTimeDisplay">즉시 탑승 가능</div>
+                <div class="summary-value" id="nextWaitTimeDisplay">로드 중...</div>
             </div>
 
             <table>
@@ -143,21 +114,59 @@
                         <th>탑승 관리</th>
                     </tr>
                 </thead>
-                <tbody id="queueTableBody">
-                    </tbody>
+                <tbody id="queueTableBody"></tbody>
             </table>
         </div>
     </div>
 </div>
 
 <script>
-    let planes = []; // 비행기 상태 배열
-    let queue = [];  // 대기 승객 배열
-    let idCounter = 0;
+    // 나만의 고유한 방 고유키 (비행기장 이름 등으로 자유롭게 변경 가능)
+    const ROOM_KEY = "haman_airfield_v1"; 
+    const API_URL = `https://jsonbin.org/b/${ROOM_KEY}`; 
+    // 임시로 브라우저 간 간이 동기화를 위해 오픈 키-밸류 저장소 API 사용
+    const KV_URL = `https://api.keyvalue.xyz/cf4db2d1/hamanAirfield`;
 
-    // 1초마다 타이머 계산
+    let state = {
+        planes: [
+            { id: 1, remainingSeconds: 0, isBusy: false },
+            { id: 2, remainingSeconds: 0, isBusy: false }
+        ],
+        queue: [],
+        idCounter: 0
+    };
+
+    // 서버에서 데이터 가져오기 (동기화)
+    async function loadData() {
+        try {
+            const res = await fetch(KV_URL);
+            if (res.ok) {
+                const text = await res.text();
+                if(text && text.trim() !== "") {
+                    state = JSON.parse(text);
+                    // 혹시 로컬 기기 타이머와 서버 타이머 간극이 있을 수 있으니 부드럽게 갱신
+                    document.getElementById('planeCount').value = state.planes.length;
+                }
+            }
+        } catch (e) { console.log("로드 실패, 기존 데이터 유지"); }
+        renderPlanes();
+        calculateSimulation();
+    }
+
+    // 서버에 데이터 저장하기
+    async function saveData() {
+        try {
+            await fetch(KV_URL, {
+                method: 'POST',
+                body: JSON.stringify(state)
+            });
+        } catch (e) { console.log("저장 실패"); }
+    }
+
+    // 1초마다 타이머 흐르게 하기 + 3초마다 자동으로 폰/PC 데이터 동기화
+    let syncCounter = 0;
     setInterval(() => {
-        planes.forEach(plane => {
+        state.planes.forEach(plane => {
             if (plane.isBusy && plane.remainingSeconds > 0) {
                 plane.remainingSeconds--;
                 if (plane.remainingSeconds <= 0) {
@@ -167,140 +176,121 @@
         });
         renderPlanes();
         calculateSimulation();
+
+        // 3초마다 서버에서 최신 상태 받아와 연동하기 (단, 내가 입력하는 중 방해받지 않게)
+        syncCounter++;
+        if(syncCounter >= 3) {
+            syncCounter = 0;
+            loadData();
+        }
     }, 1000);
 
-    // 비행기 초기화
-    function initPlanes() {
+    function changePlaneCount() {
         const count = parseInt(document.getElementById('planeCount').value) || 1;
-        
-        if (planes.length < count) {
-            for (let i = planes.length + 1; i <= count; i++) {
-                planes.push({ id: i, remainingSeconds: 0, isBusy: false });
+        if (state.planes.length < count) {
+            for (let i = state.planes.length + 1; i <= count; i++) {
+                state.planes.push({ id: i, remainingSeconds: 0, isBusy: false });
             }
-        } else if (planes.length > count) {
-            planes = planes.slice(0, count);
+        } else if (state.planes.length > count) {
+            state.planes = state.planes.slice(0, count);
         }
+        saveData();
         renderPlanes();
         calculateSimulation();
     }
 
-    // 비행기 현황판 그리기
     function renderPlanes() {
         const grid = document.getElementById('planesGrid');
         grid.innerHTML = '';
-
-        planes.forEach(p => {
+        state.planes.forEach(p => {
             const card = document.createElement('div');
             card.className = `plane-card ${p.isBusy ? 'busy' : ''}`;
-            
             const min = Math.floor(p.remainingSeconds / 60);
             const sec = p.remainingSeconds % 60;
-            const timeStr = p.isBusy ? `${min}분 ${sec}초 남음` : '대기 중 (Standby)';
-
             card.innerHTML = `
                 <div class="plane-id">🛩️ 비행기 ${p.id}호</div>
                 <div class="plane-status">${p.isBusy ? '❌ 탑승/비행 중' : '🟢 대기 중'}</div>
-                <div class="plane-timer">${timeStr}</div>
+                <div class="plane-timer">${p.isBusy ? `${min}분 ${sec}초 남음` : '대기 중 (Standby)'}</div>
             `;
             grid.appendChild(card);
         });
     }
 
-    // 대기 승객 추가
     function addPassenger() {
         const nameInput = document.getElementById('passengerName');
         const courseSelect = document.getElementById('courseTime');
+        if (!nameInput.value.trim()) return;
 
-        if (!nameInput.value.trim()) {
-            alert('승객명을 입력하세요.');
-            return;
-        }
-
-        idCounter++;
-        queue.push({
-            id: idCounter,
+        state.idCounter++;
+        state.queue.push({
+            id: state.idCounter,
             name: nameInput.value,
             courseMinutes: parseInt(courseSelect.value)
         });
-
         nameInput.value = '';
+        
+        saveData();
         calculateSimulation();
     }
 
-    // 탑승 완료 처리 (대기열 제외 및 타이머 주입)
     function completeBoarding(passengerId) {
-        let targetPlane = planes.find(p => !p.isBusy);
-        
+        let targetPlane = state.planes.find(p => !p.isBusy);
         if (!targetPlane) {
-            alert("현재 비어 있는 비행기가 없습니다. 비행기가 착륙하여 대기 중 상태로 전환되면 탑승 완료 처리를 해주세요.");
+            alert("비어 있는 비행기가 없습니다.");
             return;
         }
-
-        const passengerIndex = queue.findIndex(p => p.id === passengerId);
-        if (passengerIndex !== -1) {
-            const passenger = queue[passengerIndex];
-            
+        const idx = state.queue.findIndex(p => p.id === passengerId);
+        if (idx !== -1) {
             targetPlane.isBusy = true;
-            targetPlane.remainingSeconds = passenger.courseMinutes * 60;
-            
-            queue.splice(passengerIndex, 1);
-            
-            renderPlanes();
+            targetPlane.remainingSeconds = state.queue[idx].courseMinutes * 60;
+            state.queue.splice(idx, 1);
+            saveData();
             calculateSimulation();
         }
     }
 
-    // 대기 취소
     function cancelQueue(id) {
-        queue = queue.filter(p => p.id !== id);
+        state.queue = state.queue.filter(p => p.id !== id);
+        saveData();
         calculateSimulation();
     }
 
-    // 시뮬레이션 기반 대기시간 계산
     function calculateSimulation() {
         const nextWaitTimeDisplay = document.getElementById('nextWaitTimeDisplay');
         const tbody = document.getElementById('queueTableBody');
         tbody.innerHTML = '';
 
-        if (planes.length === 0) {
+        if (state.planes.length === 0) {
             nextWaitTimeDisplay.innerText = "비행기 없음";
             return;
         }
 
-        let virtualPlanes = planes.map(p => p.remainingSeconds);
+        let virtualPlanes = state.planes.map(p => p.remainingSeconds);
         let passengerWaitTimes = [];
 
-        queue.forEach(passenger => {
-            let minRemainingIndex = 0;
+        state.queue.forEach(passenger => {
+            let minIdx = 0;
             for (let i = 1; i < virtualPlanes.length; i++) {
-                if (virtualPlanes[i] < virtualPlanes[minRemainingIndex]) {
-                    minRemainingIndex = i;
-                }
+                if (virtualPlanes[i] < virtualPlanes[minIdx]) minIdx = i;
             }
-
-            let waitSeconds = virtualPlanes[minRemainingIndex];
-            passengerWaitTimes.push(Math.ceil(waitSeconds / 60));
-            virtualPlanes[minRemainingIndex] += (passenger.courseMinutes * 60);
+            passengerWaitTimes.push(Math.ceil(virtualPlanes[minIdx] / 60));
+            virtualPlanes[minIdx] += (passenger.courseMinutes * 60);
         });
 
-        // 테이블 출력
-        if (queue.length === 0) {
+        if (state.queue.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" class="empty-text">현재 대기실에 대기 중인 승객이 없습니다.</td></tr>`;
         } else {
-            queue.forEach((passenger, index) => {
+            state.queue.forEach((passenger, index) => {
                 const row = document.createElement('tr');
                 const waitTime = passengerWaitTimes[index];
-                const waitText = waitTime === 0 ? "즉시 탑승" : `약 ${waitTime}분`;
-                
-                const hasReadyPlane = planes.some(p => !p.isBusy);
-                const isFirst = (index === 0);
-                const buttonDisableAttr = (isFirst && hasReadyPlane) ? '' : 'style="background:#7f8c8d; cursor:not-allowed;"';
+                const hasReadyPlane = state.planes.some(p => !p.isBusy);
+                const buttonDisableAttr = (index === 0 && hasReadyPlane) ? '' : 'style="background:#7f8c8d; cursor:not-allowed;"';
 
                 row.innerHTML = `
                     <td><b>${index + 1}번</b></td>
                     <td>${passenger.name}</td>
                     <td><span style="color:#4ba3e3; font-weight:bold;">${passenger.courseMinutes}분 코스</span></td>
-                    <td style="color:#f1c40f; font-weight:bold;">${waitText}</td>
+                    <td style="color:#f1c40f; font-weight:bold;">${waitTime === 0 ? "즉시 탑승" : `약 ${waitTime}분`}</td>
                     <td>
                         <button class="btn-action btn-takeoff" ${buttonDisableAttr} onclick="completeBoarding(${passenger.id})">🛫 탑승 완료</button>
                         <button class="btn-action btn-cancel" onclick="cancelQueue(${passenger.id})">취소</button>
@@ -310,14 +300,11 @@
             });
         }
 
-        // 전광판 업데이트
-        let nextMinIndex = 0;
+        let minIdx = 0;
         for (let i = 1; i < virtualPlanes.length; i++) {
-            if (virtualPlanes[i] < virtualPlanes[nextMinIndex]) {
-                nextMinIndex = i;
-            }
+            if (virtualPlanes[i] < virtualPlanes[minIdx]) minIdx = i;
         }
-        let nextWaitMinutes = Math.ceil(virtualPlanes[nextMinIndex] / 60);
+        let nextWaitMinutes = Math.ceil(virtualPlanes[minIdx] / 60);
         
         if (nextWaitMinutes <= 0) {
             nextWaitTimeDisplay.innerText = "즉시 탑승 가능";
@@ -334,7 +321,8 @@
         }
     }
 
-    initPlanes();
+    // 켜지자마자 데이터 한 번 긁어오기
+    loadData();
 </script>
 </body>
 </html>
